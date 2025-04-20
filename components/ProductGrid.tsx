@@ -1,26 +1,16 @@
 'use client';
 
 import { ProductCard } from '@/components/ProductCard';
-import { Product, StoreSetting, CategorizedStores } from '@/lib/types';
+import { Product, StoreSetting } from '@/lib/types';
 
 interface ProductGridProps {
   products: Product[];
-  storeSettings: CategorizedStores;
+  storeSettings: Record<string, StoreSetting>;
   isGridView: boolean;
 }
 
 export function ProductGrid({ products, storeSettings, isGridView }: ProductGridProps) {
-  // Convert categorizedStores to flat store settings with title
-  const flatStoreSettings = Object.values(storeSettings).reduce((acc, stores) => {
-    Object.entries(stores).forEach(([storeId, store]) => {
-      if (!acc[storeId]) {
-        acc[storeId] = store;
-      }
-    });
-    return acc;
-  }, {} as Record<string, StoreSetting>);
-
-  if (products.length === 0) {
+  if (!products || products.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-lg text-gray-600">პროდუქტები ვერ მოიძებნა</p>
@@ -38,7 +28,7 @@ export function ProductGrid({ products, storeSettings, isGridView }: ProductGrid
         <ProductCard
           key={product.productKey}
           product={product}
-          storeSettings={flatStoreSettings}
+          storeSettings={storeSettings}
           isListView={!isGridView}
         />
       ))}

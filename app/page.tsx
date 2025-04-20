@@ -368,7 +368,7 @@ export default function Home() {
             ) : (
               <ProductGrid
                 products={paginatedProducts}
-                storeSettings={siteSettings?.categorizedStores || {}}
+                storeSettings={siteSettings?.storeSetting || {}}
                 isGridView={isGridView}
               />
             )}
