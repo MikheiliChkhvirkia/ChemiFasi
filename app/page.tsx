@@ -6,9 +6,10 @@ import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
 import { StoreFilterBar } from '@/components/StoreFilterBar';
 import { PromotionalBanner } from '@/components/PromotionalBanner';
+import { LocationDialog } from '@/components/LocationDialog';
 import { Logo } from '@/components/Logo';
 import { searchProducts, getSiteSettings, detectImage } from '@/lib/api';
-import { SortType, Product, SearchResponse } from '@/lib/types';
+import { SortType, Product, SearchResponse, Location } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,27 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isGridView, setIsGridView] = useState(true);
   const [isImageSearching, setIsImageSearching] = useState(false);
+  const [location, setLocation] = useState<Location | null>(null);
+  const [showLocationDialog, setShowLocationDialog] = useState(false);
+  const [showInitialLocationPrompt, setShowInitialLocationPrompt] = useState(false);
+  const [pendingStoreId, setPendingStoreId] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Try to load saved location from localStorage
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+      try {
+        setLocation(JSON.parse(savedLocation));
+      } catch (e) {
+        console.error('Failed to parse saved location:', e);
+      }
+    }
+
+    const hasSeenLocationPrompt = localStorage.getItem('hasSeenLocationPrompt');
+    if (!hasSeenLocationPrompt && !savedLocation) {
+      setShowInitialLocationPrompt(true);
+    }
+  }, []);
 
   const debouncedSetMinPrice = useCallback(
     debounce((value: string) => setDebouncedMinPrice(value), DEBOUNCE_DELAY),
@@ -101,6 +123,8 @@ export default function Home() {
     setDebouncedMinPrice('');
     setDebouncedMaxPrice('');
     setCurrentPage(1);
+    setLocation(null);
+    localStorage.removeItem('userLocation');
     scrollToTop();
   };
 
@@ -109,14 +133,15 @@ export default function Home() {
     queryFn: getSiteSettings,
   });
 
-  const { data: searchResults, isLoading: isSearching, error: searchError } = useQuery({
-    queryKey: ['products', searchQuery, sortType, debouncedMinPrice, debouncedMaxPrice, selectedCategory],
+  const { data: searchResults, isLoading: isSearching } = useQuery({
+    queryKey: ['products', searchQuery, sortType, debouncedMinPrice, debouncedMaxPrice, selectedCategory, location?.latitude, location?.longitude],
     queryFn: () => searchProducts({
       query: searchQuery,
       sort: sortType,
       minPrice: debouncedMinPrice ? Number(debouncedMinPrice) : undefined,
       maxPrice: debouncedMaxPrice ? Number(debouncedMaxPrice) : undefined,
       categoryId: selectedCategory || undefined,
+      location: location || undefined,
     }),
     enabled: searchQuery.length >= MIN_SEARCH_LENGTH || selectedCategory !== null,
   });
@@ -142,12 +167,33 @@ export default function Home() {
   };
 
   const handleStoreToggle = (storeId: number) => {
+    const store = siteSettings?.storeSetting[storeId];
+    
+    if (store?.requiresLocation && !location) {
+      setPendingStoreId(storeId);
+      setShowLocationDialog(true);
+      return;
+    }
+
     setSelectedStores(prev =>
       prev.includes(storeId)
         ? prev.filter(id => id !== storeId)
-        : [storeId]
+        : [...prev, storeId]
     );
     setCurrentPage(1);
+  };
+
+  const handleLocationAccept = (coords: Location) => {
+    setLocation(coords);
+    localStorage.setItem('userLocation', JSON.stringify(coords));
+    localStorage.setItem('hasSeenLocationPrompt', 'true');
+    setShowLocationDialog(false);
+    setShowInitialLocationPrompt(false);
+    
+    if (pendingStoreId !== null) {
+      setSelectedStores(prev => [...prev, pendingStoreId]);
+      setPendingStoreId(null);
+    }
   };
 
   const handleCategorySelect = (categoryId: string) => {
@@ -184,17 +230,9 @@ export default function Home() {
     const price = product.salePrice || product.price;
     const matchesMinPrice = !debouncedMinPrice || price >= Number(debouncedMinPrice);
     const matchesMaxPrice = !debouncedMaxPrice || price <= Number(debouncedMaxPrice);
+    const matchesStores = selectedStores.length === 0 || selectedStores.includes(product.source);
     
-    if (selectedStores.length > 0) {
-      return selectedStores.includes(product.source) && matchesMinPrice && matchesMaxPrice;
-    }
-    
-    if (selectedCategory && siteSettings?.categorizedStores) {
-      const categoryStores = siteSettings.categorizedStores[selectedCategory];
-      return categoryStores && categoryStores[product.source] && matchesMinPrice && matchesMaxPrice;
-    }
-    
-    return matchesMinPrice && matchesMaxPrice;
+    return matchesMinPrice && matchesMaxPrice && matchesStores;
   }) || [];
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
@@ -357,21 +395,12 @@ export default function Home() {
       <div className="flex-1 py-6">
         {currentResults && (
           <div className="max-w-7xl mx-auto px-4">
-            {isSearching || isImageSearching ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-black" />
-              </div>
-            ) : searchError ? (
-              <div className="text-center py-12">
-                <p className="text-lg text-red-600">დაფიქსირდა შეცდომა, გთხოვთ სცადოთ თავიდან</p>
-              </div>
-            ) : (
-              <ProductGrid
-                products={paginatedProducts}
-                storeSettings={siteSettings?.storeSetting || {}}
-                isGridView={isGridView}
-              />
-            )}
+            <ProductGrid
+              products={paginatedProducts}
+              storeSettings={siteSettings?.storeSetting || {}}
+              isGridView={isGridView}
+              isLoading={isSearching || isImageSearching}
+            />
 
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center items-center gap-1">
@@ -485,6 +514,17 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <LocationDialog
+        isOpen={showLocationDialog || showInitialLocationPrompt}
+        onClose={() => {
+          setShowLocationDialog(false);
+          setShowInitialLocationPrompt(false);
+          setPendingStoreId(null);
+        }}
+        onAccept={handleLocationAccept}
+        storeName={pendingStoreId ? siteSettings?.storeSetting[pendingStoreId]?.title || '' : 'ჩემი ფასი'}
+      />
     </main>
   );
 }

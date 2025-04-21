@@ -76,7 +76,7 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
             {salePercentage && (
               <div className="absolute left-2 top-2">
                 <div className="bg-red-600 text-white text-sm font-bold px-2 py-1 rounded">
-                  -{salePercentage}%
+                  -{Math.abs(salePercentage)}%
                 </div>
               </div>
             )}
@@ -134,7 +134,7 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
       {salePercentage && (
         <div className="absolute left-2 top-2 z-10">
           <div className="bg-red-600 text-white text-sm font-bold px-2 py-1 rounded">
-            -{salePercentage}%
+            -{Math.abs(salePercentage)}%
           </div>
         </div>
       )}

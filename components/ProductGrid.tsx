@@ -2,18 +2,28 @@
 
 import { ProductCard } from '@/components/ProductCard';
 import { Product, StoreSetting } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 interface ProductGridProps {
   products: Product[];
   storeSettings: Record<string, StoreSetting>;
   isGridView: boolean;
+  isLoading?: boolean;
 }
 
-export function ProductGrid({ products, storeSettings, isGridView }: ProductGridProps) {
+export function ProductGrid({ products, storeSettings, isGridView, isLoading }: ProductGridProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-black" />
+      </div>
+    );
+  }
+
   if (!products || products.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-lg text-gray-600">პროდუქტები ვერ მოიძებნა</p>
+        <p className="text-lg text-gray-600">მიმდინარეობს ძიება...</p>
       </div>
     );
   }

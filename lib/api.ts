@@ -19,21 +19,27 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
 
 export const searchProducts = async (filters: SearchFilters): Promise<SearchResponse> => {
   try {
-    const { query, sort, minPrice, maxPrice, categoryId } = filters;
+    const { query, sort, minPrice, maxPrice, categoryId, location } = filters;
     const sortValue = sort === 'relevance' ? 1 : sort === 'price-asc' ? 2 : 3;
     
-    const params = new URLSearchParams({
-      ...(query && { query }),
+    const params: Record<string, string> = {
       sort: sortValue.toString(),
-      ...(minPrice && { minPrice: minPrice.toString() }),
-      ...(maxPrice && { maxPrice: maxPrice.toString() }),
-      ...(categoryId && { categoryId: categoryId.toString() }),
-    });
+    };
 
-    console.log('Search API URL:', `${baseURL}/product/search?${params}`);
+    if (query) params.query = query;
+    if (minPrice) params.minPrice = minPrice.toString();
+    if (maxPrice) params.maxPrice = maxPrice.toString();
+    if (categoryId) params.categoryId = categoryId.toString();
+    console.log("Location is here")
+    console.log(location)
+    if (location) {
+      params.latitude = location.latitude.toString();
+      params.longitude = location.longitude.toString();
+    }
+
+    const searchParams = new URLSearchParams(params);
     
-    const { data } = await api.get(`/product/search?${params}`);
-    console.log('Search API Response:', data);
+    const { data } = await api.get(`/product/search?${searchParams}`);
     
     return {
       products: data.products || [],
@@ -41,8 +47,6 @@ export const searchProducts = async (filters: SearchFilters): Promise<SearchResp
       storeCounts: data.storeCounts || {},
     };
   } catch (error) {
-    console.error('Search API Error:', error);
-    // Return empty response on error
     return {
       products: [],
       totalCount: 0,
@@ -54,10 +58,8 @@ export const searchProducts = async (filters: SearchFilters): Promise<SearchResp
 export const detectImage = async (imageUrl: string): Promise<SearchResponse> => {
   try {
     const params = new URLSearchParams({ imageUrl });
-    console.log('Image Detection API URL:', `${baseURL}/product/detect?${params}`);
     
     const { data } = await api.get(`/product/detect?${params}`);
-    console.log('Image Detection API Response:', data);
     
     return {
       products: data.products || [],
@@ -66,7 +68,6 @@ export const detectImage = async (imageUrl: string): Promise<SearchResponse> => 
     };
   } catch (error) {
     console.error('Image Detection API Error:', error);
-    // Return empty response on error
     return {
       products: [],
       totalCount: 0,

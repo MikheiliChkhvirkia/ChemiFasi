@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { MapPin } from 'lucide-react';
 
 interface StoreFilterBarProps {
   categorizedStores: CategorizedStores;
@@ -39,7 +40,6 @@ export function StoreFilterBar({
   onStoreToggle,
   onCategoryToggle,
 }: StoreFilterBarProps) {
-  // Get stores for the current category or all stores if no category is selected
   const getVisibleStores = () => {
     if (selectedCategory) {
       return Object.entries(categorizedStores[selectedCategory] || {})
@@ -51,7 +51,6 @@ export function StoreFilterBar({
         .filter(store => store.count > 0);
     }
 
-    // Collect all unique stores from all categories
     const allStores = new Map<number, { store: StoreSetting; count: number }>();
     Object.values(categorizedStores).forEach(stores => {
       Object.entries(stores).forEach(([id, store]) => {
@@ -76,7 +75,6 @@ export function StoreFilterBar({
   return (
     <div className="bg-white space-y-4">
       <div className="max-w-7xl mx-auto">
-        {/* Categories Section */}
         <div className="mb-4">
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex space-x-2">
@@ -126,7 +124,6 @@ export function StoreFilterBar({
           </ScrollArea>
         </div>
 
-        {/* Stores Section */}
         {visibleStores.length > 0 && (
           <div className="border-t pt-4">
             <ScrollArea className="w-full whitespace-nowrap">
@@ -154,14 +151,30 @@ export function StoreFilterBar({
                                   className="w-[28px] h-[28px] object-contain"
                                 />
                               )}
+                              {store.requiresLocation && (
+                                <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-0.5">
+                                  <MapPin className="h-3 w-3 text-white" />
+                                </div>
+                              )}
                             </div>
-                            <span className="transition-opacity text-sm font-medium">
-                              {formatNumber(store.count)}
-                            </span>
+                            <div className="flex flex-col items-start">
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm font-medium">
+                                  {store.title}
+                                </span>
+                              </div>
+                              <span className="text-xs opacity-70">
+                                {formatNumber(store.count)} პროდუქტი
+                                {store.requiresLocation && ' • საჭიროებს მდებარეობას'}
+                              </span>
+                            </div>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{store.title}: {store.count} პროდუქტი</p>
+                          <p>
+                            {store.title}
+                            {store.requiresLocation && ' - საჭიროებს მდებარეობას მანძილის დასათვლელად'}
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     );
