@@ -20,26 +20,46 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
 export const searchProducts = async (filters: SearchFilters): Promise<SearchResponse> => {
   try {
     const { query, sort, minPrice, maxPrice, categoryId, location } = filters;
+    console.log('[API] searchProducts called with filters:', filters);
+    
     const sortValue = sort === 'relevance' ? 1 : sort === 'price-asc' ? 2 : 3;
     
-    const params: Record<string, string> = {
-      sort: sortValue.toString(),
-    };
+    const params = new URLSearchParams();
+    params.append('sort', sortValue.toString());
 
-    if (query) params.query = query;
-    if (minPrice) params.minPrice = minPrice.toString();
-    if (maxPrice) params.maxPrice = maxPrice.toString();
-    if (categoryId) params.categoryId = categoryId.toString();
-    console.log("Location is here")
-    console.log(location)
-    if (location) {
-      params.latitude = location.latitude.toString();
-      params.longitude = location.longitude.toString();
+    if (query) {
+      params.append('query', query);
     }
 
-    const searchParams = new URLSearchParams(params);
+    if (typeof minPrice === 'number') {
+      params.append('minPrice', minPrice.toString());
+    }
+
+    if (typeof maxPrice === 'number') {
+      params.append('maxPrice', maxPrice.toString());
+    }
+
+    if (categoryId) {
+      params.append('categoryId', categoryId);
+    }
+
+    if (location && 
+        typeof location.latitude === 'number' && 
+        typeof location.longitude === 'number' &&
+        !isNaN(location.latitude) && 
+        !isNaN(location.longitude)) {
+      console.log('[API] Adding location to params:', location);
+      params.append('latitude', location.latitude.toString());
+      params.append('longitude', location.longitude.toString());
+    } else {
+      console.log('[API] Location not added to params:', location);
+    }
+
+    const url = `/product/search?${params}`;
+    console.log('[API] Making request to:', url);
     
-    const { data } = await api.get(`/product/search?${searchParams}`);
+    const { data } = await api.get(url);
+    console.log('[API] Response received:', data);
     
     return {
       products: data.products || [],
@@ -47,6 +67,7 @@ export const searchProducts = async (filters: SearchFilters): Promise<SearchResp
       storeCounts: data.storeCounts || {},
     };
   } catch (error) {
+    console.error('[API] Search API Error:', error);
     return {
       products: [],
       totalCount: 0,
@@ -58,8 +79,10 @@ export const searchProducts = async (filters: SearchFilters): Promise<SearchResp
 export const detectImage = async (imageUrl: string): Promise<SearchResponse> => {
   try {
     const params = new URLSearchParams({ imageUrl });
+    console.log('[API] Image detection request with URL:', imageUrl);
     
     const { data } = await api.get(`/product/detect?${params}`);
+    console.log('[API] Image detection response:', data);
     
     return {
       products: data.products || [],
@@ -67,7 +90,7 @@ export const detectImage = async (imageUrl: string): Promise<SearchResponse> => 
       storeCounts: data.storeCounts || {},
     };
   } catch (error) {
-    console.error('Image Detection API Error:', error);
+    console.error('[API] Image Detection API Error:', error);
     return {
       products: [],
       totalCount: 0,

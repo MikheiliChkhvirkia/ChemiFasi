@@ -6,7 +6,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
 import { StoreFilterBar } from '@/components/StoreFilterBar';
 import { PromotionalBanner } from '@/components/PromotionalBanner';
-import { LocationDialog } from '@/components/LocationDialog';
+import LocationDialog from '@/components/LocationDialog';
 import { Logo } from '@/components/Logo';
 import { searchProducts, getSiteSettings, detectImage } from '@/lib/api';
 import { SortType, Product, SearchResponse, Location } from '@/lib/types';
@@ -22,7 +22,7 @@ const VISIBLE_PAGES = 5;
 const SCROLL_THRESHOLD = 100;
 const SEARCH_DEBOUNCE_DELAY = 500;
 
-export default function Home() {
+export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStores, setSelectedStores] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -41,25 +41,8 @@ export default function Home() {
   const [isImageSearching, setIsImageSearching] = useState(false);
   const [location, setLocation] = useState<Location | null>(null);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
-  const [showInitialLocationPrompt, setShowInitialLocationPrompt] = useState(false);
+  const [showInitialLocationPrompt, setShowInitialLocationPrompt] = useState(true);
   const [pendingStoreId, setPendingStoreId] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Try to load saved location from localStorage
-    const savedLocation = localStorage.getItem('userLocation');
-    if (savedLocation) {
-      try {
-        setLocation(JSON.parse(savedLocation));
-      } catch (e) {
-        console.error('Failed to parse saved location:', e);
-      }
-    }
-
-    const hasSeenLocationPrompt = localStorage.getItem('hasSeenLocationPrompt');
-    if (!hasSeenLocationPrompt && !savedLocation) {
-      setShowInitialLocationPrompt(true);
-    }
-  }, []);
 
   const debouncedSetMinPrice = useCallback(
     debounce((value: string) => setDebouncedMinPrice(value), DEBOUNCE_DELAY),
@@ -124,7 +107,6 @@ export default function Home() {
     setDebouncedMaxPrice('');
     setCurrentPage(1);
     setLocation(null);
-    localStorage.removeItem('userLocation');
     scrollToTop();
   };
 
@@ -134,7 +116,16 @@ export default function Home() {
   });
 
   const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['products', searchQuery, sortType, debouncedMinPrice, debouncedMaxPrice, selectedCategory, location?.latitude, location?.longitude],
+    queryKey: [
+      'products',
+      searchQuery,
+      sortType,
+      debouncedMinPrice,
+      debouncedMaxPrice,
+      selectedCategory,
+      location?.latitude,
+      location?.longitude
+    ],
     queryFn: () => searchProducts({
       query: searchQuery,
       sort: sortType,
@@ -185,8 +176,6 @@ export default function Home() {
 
   const handleLocationAccept = (coords: Location) => {
     setLocation(coords);
-    localStorage.setItem('userLocation', JSON.stringify(coords));
-    localStorage.setItem('hasSeenLocationPrompt', 'true');
     setShowLocationDialog(false);
     setShowInitialLocationPrompt(false);
     
