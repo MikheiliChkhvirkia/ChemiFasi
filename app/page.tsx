@@ -6,10 +6,10 @@ import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
 import { StoreFilterBar } from '@/components/StoreFilterBar';
 import { PromotionalBanner } from '@/components/PromotionalBanner';
-import LocationDialog from '@/components/LocationDialog';
+import { LogoCarousel } from '@/components/LogoCarousel';
 import { Logo } from '@/components/Logo';
 import { searchProducts, getSiteSettings, detectImage } from '@/lib/api';
-import { SortType, Product, SearchResponse, Location } from '@/lib/types';
+import { SortType, Product, SearchResponse } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -39,10 +39,6 @@ export default function HomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isGridView, setIsGridView] = useState(true);
   const [isImageSearching, setIsImageSearching] = useState(false);
-  const [location, setLocation] = useState<Location | null>(null);
-  const [showLocationDialog, setShowLocationDialog] = useState(false);
-  const [showInitialLocationPrompt, setShowInitialLocationPrompt] = useState(true);
-  const [pendingStoreId, setPendingStoreId] = useState<number | null>(null);
 
   const debouncedSetMinPrice = useCallback(
     debounce((value: string) => setDebouncedMinPrice(value), DEBOUNCE_DELAY),
@@ -106,7 +102,6 @@ export default function HomePage() {
     setDebouncedMinPrice('');
     setDebouncedMaxPrice('');
     setCurrentPage(1);
-    setLocation(null);
     scrollToTop();
   };
 
@@ -122,9 +117,7 @@ export default function HomePage() {
       sortType,
       debouncedMinPrice,
       debouncedMaxPrice,
-      selectedCategory,
-      location?.latitude,
-      location?.longitude
+      selectedCategory
     ],
     queryFn: () => searchProducts({
       query: searchQuery,
@@ -132,7 +125,6 @@ export default function HomePage() {
       minPrice: debouncedMinPrice ? Number(debouncedMinPrice) : undefined,
       maxPrice: debouncedMaxPrice ? Number(debouncedMaxPrice) : undefined,
       categoryId: selectedCategory || undefined,
-      location: location || undefined,
     }),
     enabled: searchQuery.length >= MIN_SEARCH_LENGTH || selectedCategory !== null,
   });
@@ -158,31 +150,12 @@ export default function HomePage() {
   };
 
   const handleStoreToggle = (storeId: number) => {
-    const store = siteSettings?.storeSetting[storeId];
-    
-    if (store?.requiresLocation && !location) {
-      setPendingStoreId(storeId);
-      setShowLocationDialog(true);
-      return;
-    }
-
     setSelectedStores(prev =>
       prev.includes(storeId)
         ? prev.filter(id => id !== storeId)
         : [...prev, storeId]
     );
     setCurrentPage(1);
-  };
-
-  const handleLocationAccept = (coords: Location) => {
-    setLocation(coords);
-    setShowLocationDialog(false);
-    setShowInitialLocationPrompt(false);
-    
-    if (pendingStoreId !== null) {
-      setSelectedStores(prev => [...prev, pendingStoreId]);
-      setPendingStoreId(null);
-    }
   };
 
   const handleCategorySelect = (categoryId: string) => {
@@ -450,6 +423,12 @@ export default function HomePage() {
         </Button>
       )}
 
+      {siteSettings?.storeSetting && (
+        <div className="border-t">
+          <LogoCarousel stores={siteSettings.storeSetting} />
+        </div>
+      )}
+
       <footer className="mt-auto py-8 bg-black text-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -503,17 +482,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      <LocationDialog
-        isOpen={showLocationDialog || showInitialLocationPrompt}
-        onClose={() => {
-          setShowLocationDialog(false);
-          setShowInitialLocationPrompt(false);
-          setPendingStoreId(null);
-        }}
-        onAccept={handleLocationAccept}
-        storeName={pendingStoreId ? siteSettings?.storeSetting[pendingStoreId]?.title || '' : 'ჩემი ფასი'}
-      />
     </main>
   );
 }

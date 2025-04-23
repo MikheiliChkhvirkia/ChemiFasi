@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { SearchFilters, SearchResponse, SiteSettings } from './types';
+import { SearchFilters, SearchResponse, SiteSettings, Banner } from './types';
 
 const baseURL = process.env.NODE_ENV === 'development' 
   ? 'https://localhost:7172/api/v1'
@@ -17,9 +17,14 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
   return data;
 };
 
+export const getBanners = async (): Promise<Banner[]> => {
+  const { data } = await api.get('/sitesettings/get-banners');
+  return data.filter((banner: Banner) => banner.orderNo === 1);
+};
+
 export const searchProducts = async (filters: SearchFilters): Promise<SearchResponse> => {
   try {
-    const { query, sort, minPrice, maxPrice, categoryId, location } = filters;
+    const { query, sort, minPrice, maxPrice, categoryId } = filters;
     console.log('[API] searchProducts called with filters:', filters);
     
     const sortValue = sort === 'relevance' ? 1 : sort === 'price-asc' ? 2 : 3;
@@ -41,18 +46,6 @@ export const searchProducts = async (filters: SearchFilters): Promise<SearchResp
 
     if (categoryId) {
       params.append('categoryId', categoryId);
-    }
-
-    if (location && 
-        typeof location.latitude === 'number' && 
-        typeof location.longitude === 'number' &&
-        !isNaN(location.latitude) && 
-        !isNaN(location.longitude)) {
-      console.log('[API] Adding location to params:', location);
-      params.append('latitude', location.latitude.toString());
-      params.append('longitude', location.longitude.toString());
-    } else {
-      console.log('[API] Location not added to params:', location);
     }
 
     const url = `/product/search?${params}`;

@@ -1,10 +1,12 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Search, Tag, ShoppingBag, Percent } from 'lucide-react';
-import { CategorizedStores, CategoryInfo } from '@/lib/types';
+import { CategorizedStores, CategoryInfo, Banner } from '@/lib/types';
+import { getBanners } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { Card } from '@/components/ui/card';
 
 interface PromotionalBannerProps {
   categorizedStores: CategorizedStores;
@@ -13,164 +15,210 @@ interface PromotionalBannerProps {
   onCategorySelect: (categoryId: string) => void;
 }
 
-const FEATURED_DEALS = [
-  {
-    id: '1',
-    title: 'დღის შეთავაზებები',
-    description: 'მიიღეთ 30%-მდე ფასდაკლება',
-    imageUrl: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=800&auto=format&fit=crop&q=60',
-    icon: Percent,
-  },
-  {
-    id: '2',
-    title: 'მეორადი ნივთები',
-    description: 'საუკეთესო ფასები',
-    imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop&q=60',
-    icon: ShoppingBag,
-  },
-];
+interface CategoryWithDimensions {
+  id: string;
+  category: CategoryInfo;
+  width: number;
+  height: number;
+  stores: Record<string, any>;
+  gridArea?: string;
+}
 
-export function PromotionalBanner({ categorizedStores, categories = {}, onSearch, onCategorySelect }: PromotionalBannerProps) {
+export function PromotionalBanner({
+  categorizedStores,
+  categories = {},
+  onSearch,
+  onCategorySelect,
+}: PromotionalBannerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bannerRefs = useRef<HTMLDivElement[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [categoriesWithDimensions, setCategoriesWithDimensions] = useState<CategoryWithDimensions[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const { data: allBanners = [] } = useQuery({
+    queryKey: ['banners'],
+    queryFn: getBanners,
+  });
+
+  const banners = allBanners
+    .filter((banner) => !!banner.mobileImageUrl)
+    .filter((banner, index, self) => self.findIndex(b => b.mobileImageUrl === banner.mobileImageUrl) === index)
+    .slice(0, 13);
 
   const scroll = (direction: 'left' | 'right') => {
-    if (!scrollRef.current || isScrolling) return;
-    setIsScrolling(true);
-    const nextIndex = direction === 'left'
-      ? (currentIndex - 1 + FEATURED_DEALS.length) % FEATURED_DEALS.length
-      : (currentIndex + 1) % FEATURED_DEALS.length;
+    if (!banners.length || isScrolling) return;
 
-    scrollRef.current.scrollTo({
-      left: nextIndex * 400,
-      behavior: 'smooth',
-    });
+    const nextIndex =
+      direction === 'left'
+        ? (currentIndex - 1 + banners.length) % banners.length
+        : (currentIndex + 1) % banners.length;
 
-    setCurrentIndex(nextIndex);
-    setTimeout(() => setIsScrolling(false), 500);
+    const next = bannerRefs.current[nextIndex];
+
+    if (next) {
+      setIsScrolling(true);
+      next.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+      setCurrentIndex(nextIndex);
+      setTimeout(() => setIsScrolling(false), 500);
+    }
   };
 
   useEffect(() => {
+    if (!banners.length) return;
     const interval = setInterval(() => {
       if (!isScrolling) scroll('right');
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [currentIndex, isScrolling]);
+  }, [currentIndex, isScrolling, banners.length]);
 
-  const categoryEntries = Object.entries(categories);
-  const gridColsClass = categoryEntries.length <= 3 
-    ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' 
-    : categoryEntries.length <= 4
-    ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-4'
-    : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6';
+  useEffect(() => {
+    const loadImageDimensions = async () => {
+      const categoryEntries = Object.entries(categories);
+      const dimensionsPromises = categoryEntries.map(([id, category]) =>
+        new Promise<CategoryWithDimensions>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            resolve({
+              id,
+              category,
+              width: img.width,
+              height: img.height,
+              stores: categorizedStores[id] || {},
+            });
+          };
+          img.onerror = () => {
+            resolve({
+              id,
+              category,
+              width: 1,
+              height: 1,
+              stores: categorizedStores[id] || {},
+            });
+          };
+          img.src = category.imageUrl;
+        })
+      );
+
+      const loadedCategories = await Promise.all(dimensionsPromises);
+      const sortedCategories = loadedCategories.sort((a, b) => (b.width / b.height) - (a.width / a.height));
+      sortedCategories.forEach((cat, index) => {
+        const aspectRatio = cat.width / cat.height;
+        if (aspectRatio > 1.5) {
+          cat.gridArea = `span 1 / span 2`;
+        } else if (aspectRatio < 0.75) {
+          cat.gridArea = `span 2 / span 1`;
+        } else if (index < 2) {
+          cat.gridArea = `span 2 / span 2`;
+        } else {
+          cat.gridArea = `span 1 / span 1`;
+        }
+      });
+      setCategoriesWithDimensions(sortedCategories);
+      setIsLoading(false);
+    };
+
+    loadImageDimensions();
+  }, [categories, categorizedStores]);
+
+  const handleBannerClick = (banner: Banner) => {
+    if (banner.route?.startsWith('http')) {
+      window.open(banner.route, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Featured Deals Carousel */}
-      <div className="relative max-w-7xl mx-auto px-4">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm"
-            onClick={() => scroll('left')}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-        </div>
+    <div className="space-y-12 py-8">
+      {banners.length > 0 && (
+        <div className="relative max-w-7xl mx-auto px-4">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                scroll('left');
+              }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
 
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm"
-            onClick={() => scroll('right')}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                scroll('right');
+              }}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
 
-        <div
-          ref={scrollRef}
-          className="w-full overflow-x-auto scrollbar-hide scroll-smooth"
-        >
-          <div className="flex w-max">
-            {FEATURED_DEALS.map((deal) => (
-              <Card
-                key={deal.id}
-                className="flex-none w-[400px] overflow-hidden group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg mx-2 bg-black text-white"
+          <div ref={scrollRef} className="flex overflow-x-auto space-x-4 snap-x snap-mandatory scroll-smooth">
+            {banners.map((banner, index) => (
+              <div
+                key={`${banner.title}-${index}`}
+                ref={(el) => {
+                  if (el) bannerRefs.current[index] = el;
+                }}
+                className="flex-shrink-0 snap-start cursor-pointer"
+                onClick={() => handleBannerClick(banner)}
               >
-                <div className="relative aspect-[2/1]">
-                  <img
-                    src={deal.imageUrl}
-                    alt={deal.title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-50"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <deal.icon className="h-12 w-12 mx-auto mb-2" />
-                      <h3 className="text-xl font-bold mb-1">{deal.title}</h3>
-                      <p className="text-sm opacity-90">{deal.description}</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                <img
+                  src={banner.mobileImageUrl}
+                  alt={banner.title}
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    img.style.height = `${img.naturalHeight}px`;
+                    img.style.width = `${img.naturalWidth}px`;
+                  }}
+                  className="rounded-xl object-contain shadow-md"
+                />
+              </div>
             ))}
           </div>
         </div>
+      )}
 
-        <div className="flex justify-center gap-2 mt-4">
-          {FEATURED_DEALS.map((_, index) => (
-            <button
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all ${
-                currentIndex === index ? 'bg-black w-4' : 'bg-gray-300'
-              }`}
-              onClick={() => {
-                if (scrollRef.current) {
-                  scrollRef.current.scrollTo({
-                    left: index * 400,
-                    behavior: 'smooth',
-                  });
-                  setCurrentIndex(index);
-                }
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Category Grid */}
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-xl font-bold mb-4">კატეგორიები</h2>
-        <div className={`grid ${gridColsClass} gap-4 ${categoryEntries.length <= 3 ? 'justify-center max-w-4xl mx-auto' : ''}`}>
-          {categoryEntries.map(([categoryId, category]) => {
-            const stores = categorizedStores[categoryId] || {};
-            const storeCount = Object.keys(stores).length;
-
-            return (
-              <Card
-                key={categoryId}
-                className="overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 group"
-                onClick={() => onCategorySelect(categoryId)}
-              >
-                <div className="relative aspect-square bg-black text-white p-6 flex flex-col items-center justify-center text-center">
-                  <div className="h-45 w-45 mb-4 group-hover:scale-110 transition-transform duration-300">
+        <h2 className="text-xl font-bold mb-6">კატეგორიები</h2>
+        {!isLoading && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[200px]" style={{ gridAutoFlow: 'dense' }}>
+            {categoriesWithDimensions.map((item) => {
+              const storeCount = Object.keys(item.stores).length;
+              return (
+                <Card
+                  key={item.id}
+                  onClick={() => onCategorySelect(item.id)}
+                  className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg group"
+                  style={{ gridArea: item.gridArea }}
+                >
+                  <div className="relative w-full h-full">
+                    <div className="absolute inset-0 bg-black bg-opacity-40 transition-opacity group-hover:bg-opacity-30" />
                     <img
-                      src={category.imageUrl}
-                      alt={category.title}
-                      className="w-full h-full object-contain"
+                      src={item.category.imageUrl}
+                      alt={item.category.title}
+                      className="w-full h-full object-cover"
                     />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
+                      <h3 className="text-lg md:text-xl font-bold text-center mb-1">{item.category.title}</h3>
+                      <p className="text-sm opacity-90">{storeCount} მაღაზია</p>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-medium">{category.title}</h3>
-                  <p className="text-xs mt-2 opacity-70">{storeCount} მაღაზია</p>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

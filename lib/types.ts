@@ -13,7 +13,7 @@ export interface StoreSetting {
   title: string;
   color: string;
   imageUrl: string;
-  requiresLocation?: boolean;
+  link: string;
 }
 
 export interface StoreSettings {
@@ -45,12 +45,16 @@ export interface SiteSettings {
   categories: Record<string, CategoryInfo>;
 }
 
-export type SortType = 'relevance' | 'price-asc' | 'price-desc';
-
-export interface Location {
-  latitude: number;
-  longitude: number;
+export interface Banner {
+  orderNo: number;
+  position: number;
+  title: string;
+  route: string;
+  webImageUrl: string;
+  mobileImageUrl: string;
 }
+
+export type SortType = 'relevance' | 'price-asc' | 'price-desc';
 
 export interface SearchFilters {
   query: string;
@@ -58,5 +62,4 @@ export interface SearchFilters {
   minPrice?: number;
   maxPrice?: number;
   categoryId?: string;
-  location?: Location;
 }

@@ -9,7 +9,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { MapPin } from 'lucide-react';
 
 interface StoreFilterBarProps {
   categorizedStores: CategorizedStores;
@@ -151,11 +150,6 @@ export function StoreFilterBar({
                                   className="w-[28px] h-[28px] object-contain"
                                 />
                               )}
-                              {store.requiresLocation && (
-                                <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-0.5">
-                                  <MapPin className="h-3 w-3 text-white" />
-                                </div>
-                              )}
                             </div>
                             <div className="flex flex-col items-start">
                               <div className="flex items-center gap-1">
@@ -165,16 +159,12 @@ export function StoreFilterBar({
                               </div>
                               <span className="text-xs opacity-70">
                                 {formatNumber(store.count)} პროდუქტი
-                                {store.requiresLocation && ' • საჭიროებს მდებარეობას'}
                               </span>
                             </div>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>
-                            {store.title}
-                            {store.requiresLocation && ' - საჭიროებს მდებარეობას მანძილის დასათვლელად'}
-                          </p>
+                          <p>{store.title}</p>
                         </TooltipContent>
                       </Tooltip>
                     );
