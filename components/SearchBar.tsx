@@ -40,7 +40,9 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
-    onSearch(newQuery);
+    if (!isImageSearch) {
+      onSearch(newQuery);
+    }
   };
 
   return (

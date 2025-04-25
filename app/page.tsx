@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { SORT_OPTIONS, MIN_SEARCH_LENGTH, DEBOUNCE_DELAY } from '@/lib/constants';
 import { Github, Linkedin, Youtube, ChevronLeft, ChevronRight, MoreHorizontal, ChevronUp, Loader2, Share2, LayoutGrid, List } from 'lucide-react';
 import { debounce } from '@/lib/utils';
+import Link from 'next/link';
 
 const ITEMS_PER_PAGE = 40;
 const VISIBLE_PAGES = 5;
@@ -239,19 +240,6 @@ export default function HomePage() {
       <header className={`sticky top-0 left-0 right-0 bg-white border-b z-50 transition-transform duration-300 ${
         !showHeader && isScrolled ? '-translate-y-full' : 'translate-y-0'
       }`}>
-        <div className="bg-black">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="h-12 flex items-center justify-between">
-              <Logo isScrolled={isScrolled} onReset={handleReset} />
-              <div className="flex items-center gap-4">
-                <a href="#" className="text-white/70 hover:text-white text-sm">შესვლა</a>
-                <Button variant="outline" size="sm" className="h-7 bg-transparent text-white border-white hover:bg-white hover:text-black">
-                  რეგისტრაცია
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
         
         <div className="border-b">
           <div className="max-w-7xl mx-auto px-4">
@@ -430,57 +418,7 @@ export default function HomePage() {
       )}
 
       <footer className="mt-auto py-8 bg-black text-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="font-semibold mb-4">ჩვენს შესახებ</h3>
-              <p className="text-sm text-gray-300">
-                ჩემი ფასი არ ყიდის პროდუქტებს. ყველა პროდუქტის მონაცემები მოპოვებულია საჯარო წყაროებიდან.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">სამართლებრივი</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="text-gray-300 hover:text-white">კონფიდენციალურობის პოლიტიკა</a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-300 hover:text-white">მომსახურების პირობები</a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">შემქმნელი</h3>
-              <div className="flex gap-4">
-                <a
-                  href="https://github.com/MikheiliChkhvirkia/MikheilChkhvirkia"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <Github className="h-6 w-6" />
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/mikheil-chkhvirkia-a1809421a/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <Linkedin className="h-6 w-6" />
-                </a>
-                <a
-                  href="https://www.youtube.com/@MrTypicalCouple"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <Youtube className="h-6 w-6" />
-                </a>
-              </div>
-              <p className="mt-4 text-sm text-gray-300">© 2025 მიხეილ ჩხვირკია</p>
-            </div>
-          </div>
-        </div>
+        
       </footer>
     </main>
   );
