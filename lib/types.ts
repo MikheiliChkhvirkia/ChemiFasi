@@ -54,7 +54,7 @@ export interface Banner {
   mobileImageUrl: string;
 }
 
-export type SortType = 'relevance' | 'price-asc' | 'price-desc';
+export type SortType = 'relevance' | 'price-asc' | 'price-desc' | 'discount';
 
 export interface SearchFilters {
   query: string;

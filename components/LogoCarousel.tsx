@@ -1,38 +1,46 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import { StoreSetting } from '@/lib/types';
 
 interface LogoCarouselProps {
   stores: Record<string, StoreSetting>;
 }
 
-export function LogoCarousel({ stores }: LogoCarouselProps) {
+export const LogoCarousel = memo(function LogoCarousel({ stores }: LogoCarouselProps) {
   const storeArray = Object.entries(stores);
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
   const logoWidth = 180;
   const positionRef = useRef(-logoWidth);
+  const animationFrameRef = useRef<number>();
 
   useEffect(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return;
 
-    let animationFrameId: number;
     const animate = () => {
       if (!isPaused) {
         positionRef.current -= 0.1;
-        scrollEl.style.transform = `translateX(${positionRef.current}px)`;
+        if (scrollEl) {
+          scrollEl.style.transform = `translateX(${positionRef.current}px)`;
 
-        if (Math.abs(positionRef.current) >= scrollEl.scrollWidth / 3) {
-          positionRef.current = -logoWidth;
+          if (Math.abs(positionRef.current) >= scrollEl.scrollWidth / 3) {
+            positionRef.current = -logoWidth;
+          }
         }
       }
-      animationFrameId = requestAnimationFrame(animate);
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
-    animationFrameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrameId);
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, [isPaused]);
 
   useEffect(() => {
@@ -52,15 +60,12 @@ export function LogoCarousel({ stores }: LogoCarouselProps) {
 
   const handleClick = (url: string) => {
     try {
-      const parsed = new URL(url); // 💥 will throw if invalid
-      console.log("🔗 Opening valid link:", parsed.href);
+      const parsed = new URL(url);
       window.open(parsed.href, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      console.error("❌ Invalid URL passed:", url, err);
-      alert('Invalid URL. Please check the link value.');
+      console.error("Invalid URL:", url, err);
     }
   };
-  
 
   return (
     <div
@@ -92,6 +97,9 @@ export function LogoCarousel({ stores }: LogoCarouselProps) {
                     src={store.imageUrl}
                     alt={store.title}
                     className="w-full h-full object-contain"
+                    loading="lazy"
+                    decoding="async"
+                    draggable="false"
                   />
                 </button>
               </div>
@@ -101,4 +109,4 @@ export function LogoCarousel({ stores }: LogoCarouselProps) {
       </div>
     </div>
   );
-}
+});

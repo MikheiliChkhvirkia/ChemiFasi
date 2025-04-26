@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { ProductCard } from '@/components/ProductCard';
 import { Product, StoreSetting } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
@@ -11,7 +12,12 @@ interface ProductGridProps {
   isLoading?: boolean;
 }
 
-export function ProductGrid({ products, storeSettings, isGridView, isLoading }: ProductGridProps) {
+export const ProductGrid = memo(function ProductGrid({ 
+  products, 
+  storeSettings, 
+  isGridView, 
+  isLoading 
+}: ProductGridProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -29,11 +35,13 @@ export function ProductGrid({ products, storeSettings, isGridView, isLoading }: 
   }
 
   return (
-    <div className={
-      isGridView 
-        ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-        : "flex flex-col gap-4"
-    }>
+    <div 
+      className={
+        isGridView 
+          ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+          : "flex flex-col gap-4"
+      }
+    >
       {products.map((product) => (
         <ProductCard
           key={product.productKey}
@@ -44,4 +52,4 @@ export function ProductGrid({ products, storeSettings, isGridView, isLoading }: 
       ))}
     </div>
   );
-}
+});

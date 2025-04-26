@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import { Search, Loader2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CategoryInfo } from '@/lib/types';
@@ -15,16 +15,18 @@ interface SearchBarProps {
 
 export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory }: SearchBarProps) {
   const [query, setQuery] = useState('');
-  const [isImageSearch, setIsImageSearch] = useState(false);
+  // Commented out image search functionality
+  // const [isImageSearch, setIsImageSearch] = useState(false);
 
   const handleSearch = () => {
     if (isLoading) return;
-    
-    if (isImageSearch) {
-      onImageSearch(query);
-    } else {
-      onSearch(query);
-    }
+    onSearch(query);
+    // Commented out image search functionality
+    // if (isImageSearch) {
+    //   onImageSearch(query);
+    // } else {
+    //   onSearch(query);
+    // }
   };
 
   const handleClear = () => {
@@ -32,17 +34,18 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
     onSearch('');
   };
 
-  const toggleSearchMode = () => {
-    setIsImageSearch(!isImageSearch);
-    setQuery('');
-  };
+  // Commented out image search functionality
+  // const toggleSearchMode = () => {
+  //   setIsImageSearch(!isImageSearch);
+  //   setQuery('');
+  // };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
-    if (!isImageSearch) {
-      onSearch(newQuery);
-    }
+    // if (!isImageSearch) {
+    onSearch(newQuery);
+    // }
   };
 
   return (
@@ -52,9 +55,7 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
           <Input
             type="text"
             placeholder={
-              isImageSearch 
-                ? "სურათის URL..." 
-                : selectedCategory
+              selectedCategory
                 ? `ძიება ${selectedCategory.title}-ში...`
                 : "ძიება პროდუქტის სახელით..."
             }
@@ -71,8 +72,6 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
           <div className="absolute left-4 top-0 bottom-0 flex items-center">
             {isLoading ? (
               <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
-            ) : isImageSearch ? (
-              <ImageIcon className="h-5 w-5 text-gray-400" />
             ) : (
               <Search className="h-5 w-5 text-gray-400" />
             )}
@@ -88,6 +87,7 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
             </Button>
           )}
         </div>
+        {/* Commented out image search button
         <Button 
           variant="outline"
           size="default"
@@ -97,6 +97,7 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
         >
           {isImageSearch ? 'ტექსტით ძიება' : 'სურათით ძიება'}
         </Button>
+        */}
         <Button 
           onClick={handleSearch}
           size="default"
