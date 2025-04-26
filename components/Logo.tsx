@@ -16,10 +16,11 @@ export function Logo({ isScrolled, onReset }: LogoProps) {
     e.preventDefault();
     
     if (pathname === '/') {
-      // If we're already on the home page, just reset the search
+      // If we're on the home page, reset search and reload the page
       if (onReset) {
         onReset();
       }
+      window.location.reload();
     } else {
       // If we're on another page, navigate to home
       router.push('/');

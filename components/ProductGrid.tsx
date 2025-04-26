@@ -29,7 +29,7 @@ export const ProductGrid = memo(function ProductGrid({
   if (!products || products.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-lg text-gray-600">მიმდინარეობს ძიება...</p>
+        <p className="text-lg text-gray-600">შეიყვანეთ საძიებო სიტყვა</p>
       </div>
     );
   }
