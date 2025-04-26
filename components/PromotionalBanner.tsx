@@ -34,11 +34,12 @@ const BannerImage = memo(function BannerImage({
   onClick: () => void;
 }) {
   return (
-    <div
+    <button
       className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${
         isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
       }`}
       onClick={onClick}
+      style={{ cursor: banner.route ? 'pointer' : 'default' }}
     >
       <img
         src={banner.mobileImageUrl}
@@ -48,7 +49,7 @@ const BannerImage = memo(function BannerImage({
         draggable="false"
         decoding="async"
       />
-    </div>
+    </button>
   );
 });
 
@@ -70,13 +71,10 @@ export function PromotionalBanner({
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
-  const { data: allBanners = [] } = useQuery({
+  const { data: banners = [] } = useQuery({
     queryKey: ['banners'],
     queryFn: getBanners,
   });
-
-  // Filter banners to only include those with mobileImageUrl
-  const banners = allBanners.filter(banner => banner.mobileImageUrl);
 
   useEffect(() => {
     const calculateBannerHeight = () => {
@@ -97,7 +95,7 @@ export function PromotionalBanner({
     return () => resizeObserver.disconnect();
   }, []);
 
-  const transition = (direction: 'next' | 'prev') => {
+  const transition = (direction: 'next' | 'prev', fromAutoPlay: boolean = false) => {
     if (isTransitioning || !banners.length) return;
 
     setIsTransitioning(true);
@@ -107,6 +105,11 @@ export function PromotionalBanner({
 
     setCurrentIndex(nextIndex);
     setTimeout(() => setIsTransitioning(false), 500);
+
+    // Only restart autoplay if the transition wasn't triggered by autoplay
+    if (!fromAutoPlay) {
+      startAutoPlay();
+    }
   };
 
   const startAutoPlay = () => {
@@ -114,7 +117,7 @@ export function PromotionalBanner({
       clearInterval(autoPlayRef.current);
     }
     autoPlayRef.current = setInterval(() => {
-      transition('next');
+      transition('next', true);
     }, 5000);
   };
 
@@ -126,7 +129,7 @@ export function PromotionalBanner({
         clearInterval(autoPlayRef.current);
       }
     };
-  }, [currentIndex, banners.length]);
+  }, [banners.length]);
 
   const handleBannerClick = (banner: Banner) => {
     if (banner.route?.startsWith('http')) {
@@ -206,7 +209,7 @@ export function PromotionalBanner({
   }, [categories, categorizedStores]);
 
   return (
-  <div className="space-y-12 py-8">
+    <div className="space-y-12 py-8">
       <div className="relative max-w-7xl mx-auto px-4">
         <div
           ref={bannerContainerRef}
@@ -227,7 +230,7 @@ export function PromotionalBanner({
               key={`${banner.title}-${index}`}
               banner={banner}
               isActive={currentIndex === index}
-              onClick={() => handleBannerClick(banner)}
+              onClick={() => handleBannerClick(banners[index])}
             />
           ))}
 
@@ -264,12 +267,18 @@ export function PromotionalBanner({
                 className={`w-2 h-2 rounded-full transition-all ${
                   currentIndex === index ? 'bg-white w-4' : 'bg-white/50'
                 }`}
-                onClick={() => setCurrentIndex(index)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setCurrentIndex(index);
+                  startAutoPlay();
+                }}
               />
             ))}
           </div>
         </div>
       </div>
+
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-xl font-bold mb-6">კატეგორიები</h2>
         {!isLoading && (
