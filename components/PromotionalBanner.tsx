@@ -206,73 +206,70 @@ export function PromotionalBanner({
   }, [categories, categorizedStores]);
 
   return (
-    <div className="space-y-12 py-8">
-      {banners.length > 0 && (
-        <div className="relative max-w-7xl mx-auto px-4">
-          <div
-            ref={bannerContainerRef}
-            className="relative overflow-hidden rounded-xl"
-            style={{ height: bannerHeight }}
-            onMouseEnter={() => {
-              if (autoPlayRef.current) {
-                clearInterval(autoPlayRef.current);
-              }
+  <div className="space-y-12 py-8">
+      <div className="relative max-w-7xl mx-auto px-4">
+        <div
+          ref={bannerContainerRef}
+          className="relative overflow-hidden rounded-xl"
+          style={{ height: bannerHeight }}
+          onMouseEnter={() => {
+            if (autoPlayRef.current) {
+              clearInterval(autoPlayRef.current);
+            }
+          }}
+          onMouseLeave={startAutoPlay}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {banners.map((banner, index) => (
+            <BannerImage
+              key={`${banner.title}-${index}`}
+              banner={banner}
+              isActive={currentIndex === index}
+              onClick={() => handleBannerClick(banner)}
+            />
+          ))}
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute left-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm z-20 hover:bg-white/90"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              transition('prev');
             }}
-            onMouseLeave={startAutoPlay}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
           >
-            {banners.map((banner, index) => (
-              <BannerImage
-                key={`${banner.title}-${index}`}
-                banner={banner}
-                isActive={currentIndex === index}
-                onClick={() => handleBannerClick(banner)}
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm z-20 hover:bg-white/90"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              transition('next');
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  currentIndex === index ? 'bg-white w-4' : 'bg-white/50'
+                }`}
+                onClick={() => setCurrentIndex(index)}
               />
             ))}
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute left-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm z-20 hover:bg-white/90"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                transition('prev');
-              }}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm z-20 hover:bg-white/90"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                transition('next');
-              }}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-              {banners.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    currentIndex === index ? 'bg-white w-4' : 'bg-white/50'
-                  }`}
-                  onClick={() => setCurrentIndex(index)}
-                />
-              ))}
-            </div>
           </div>
         </div>
-      )}
-
+      </div>
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-xl font-bold mb-6">კატეგორიები</h2>
         {!isLoading && (
