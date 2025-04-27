@@ -1,7 +1,7 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, addUtmParams } from '@/lib/utils';
 import { Product, StoreSetting } from '@/lib/types';
 import {
   Tooltip,
@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { memo, useState } from 'react';
 
 interface ProductCardProps {
   product: Product;
@@ -16,7 +17,35 @@ interface ProductCardProps {
   isListView?: boolean;
 }
 
-export function ProductCard({ product, storeSettings, isListView = false }: ProductCardProps) {
+const StoreLogo = memo(({ imageUrl, title, className }: { imageUrl?: string; title?: string; className: string }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className={`${className} transform-gpu`}>
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt={title || 'Store logo'}
+              className="w-full h-full object-contain p-1 select-none"
+              loading="eager"
+              decoding="async"
+              width="48"
+              height="48"
+            />
+          )}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{title || 'მაღაზია'}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+));
+
+StoreLogo.displayName = 'StoreLogo';
+
+export const ProductCard = memo(function ProductCard({ product, storeSettings, isListView = false }: ProductCardProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
   const store = storeSettings[product.source];
   const relevancePercentage = product.relevanceScore 
     ? Math.round(product.relevanceScore * 100)
@@ -28,31 +57,25 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
 
   const handleClick = () => {
     if (product.url) {
-      window.open(product.url, '_blank', 'noopener,noreferrer');
+      const urlWithUtm = addUtmParams(product.url, store?.title || 'unknown');
+
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'outbound_click', {
+          event_category: 'outbound',
+          event_label: urlWithUtm,
+          store_name: store?.title || 'Unknown Store',
+          product_name: product.name,
+          product_price: product.salePrice || product.price,
+        });
+      }
+      
+      window.open(urlWithUtm, '_blank', 'noopener,noreferrer');
     }
   };
 
-  const StoreLogoWithTooltip = ({ className }: { className: string }) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className={className}>
-            {store?.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={store.imageUrl}
-                alt={store.title || 'Store logo'}
-                className="w-full h-full object-contain p-1"
-              />
-            )}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{store?.title || 'მაღაზია'}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
 
   if (isListView) {
     return (
@@ -66,11 +89,17 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
         <div className="flex">
           <div className="w-48 h-48 relative bg-white flex-shrink-0">
             {product.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={product.imageUrl}
                 alt={product.name}
-                className="absolute inset-0 w-full h-full object-contain p-2"
+                className={`absolute inset-0 w-full h-full object-contain p-2 transition-opacity duration-300 ${
+                  imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                loading="eager"
+                decoding="async"
+                width="192"
+                height="192"
+                onLoad={handleImageLoad}
               />
             )}
             {salePercentage && (
@@ -93,7 +122,11 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
                 )}
               </div>
               <div className="ml-4">
-                <StoreLogoWithTooltip className="w-12 h-12 bg-white rounded-full flex items-center justify-center overflow-hidden" />
+                <StoreLogo
+                  imageUrl={store?.imageUrl}
+                  title={store?.title}
+                  className="w-12 h-12 bg-white rounded-full flex items-center justify-center overflow-hidden"
+                />
               </div>
             </div>
             
@@ -128,7 +161,11 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
       } as React.CSSProperties}
     >
       <div className="absolute right-2 top-2 z-10">
-        <StoreLogoWithTooltip className="w-12 h-12 bg-white rounded-full flex items-center justify-center overflow-hidden" />
+        <StoreLogo
+          imageUrl={store?.imageUrl}
+          title={store?.title}
+          className="w-12 h-12 bg-white rounded-full flex items-center justify-center overflow-hidden"
+        />
       </div>
 
       {salePercentage && (
@@ -141,11 +178,17 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
 
       <div className="aspect-square relative bg-white">
         {product.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-contain p-2"
+            className={`absolute inset-0 w-full h-full object-contain p-2 transition-opacity duration-300 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            loading="eager"
+            decoding="async"
+            width="400"
+            height="400"
+            onLoad={handleImageLoad}
           />
         )}
       </div>
@@ -178,4 +221,4 @@ export function ProductCard({ product, storeSettings, isListView = false }: Prod
       </div>
     </Card>
   );
-}
+});

@@ -37,3 +37,17 @@ export function debounce<T extends (...args: any[]) => any>(
     timeout = setTimeout(later, wait);
   };
 }
+
+export function addUtmParams(url: string, storeName: string): string {
+  try {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('utm_source', 'chemifasi');
+    urlObj.searchParams.set('utm_medium', 'referral');
+    urlObj.searchParams.set('utm_campaign', 'products');
+    urlObj.searchParams.set('utm_content', storeName.toLowerCase());
+    return urlObj.toString();
+  } catch (error) {
+    console.error('Invalid URL:', url);
+    return url;
+  }
+}

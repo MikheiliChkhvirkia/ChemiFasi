@@ -63,3 +63,26 @@ export interface SearchFilters {
   maxPrice?: number;
   categoryId?: string;
 }
+
+// Google Analytics
+interface GTagEvent {
+  action: string;
+  category: string;
+  label: string;
+  value?: number;
+}
+
+declare global {
+  interface Window {
+    dataLayer: any[];
+    gtag: (
+      command: 'event',
+      action: string,
+      params: {
+        event_category: string;
+        event_label: string;
+        [key: string]: any;
+      }
+    ) => void;
+  }
+}
