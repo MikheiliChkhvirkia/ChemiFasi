@@ -357,6 +357,7 @@ export default function HomePage() {
               storeSettings={siteSettings?.storeSetting || {}}
               isGridView={isGridView}
               isLoading={isSearching || isImageSearching}
+              searchQuery={searchQuery}
             />
 
             {totalPages > 1 && (

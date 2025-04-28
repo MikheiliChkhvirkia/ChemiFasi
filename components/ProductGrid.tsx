@@ -10,13 +10,15 @@ interface ProductGridProps {
   storeSettings: Record<string, StoreSetting>;
   isGridView: boolean;
   isLoading?: boolean;
+  searchQuery?: string;
 }
 
 export const ProductGrid = memo(function ProductGrid({ 
   products, 
   storeSettings, 
   isGridView, 
-  isLoading 
+  isLoading,
+  searchQuery = ''
 }: ProductGridProps) {
   if (isLoading) {
     return (
@@ -48,6 +50,7 @@ export const ProductGrid = memo(function ProductGrid({
           product={product}
           storeSettings={storeSettings}
           isListView={!isGridView}
+          searchQuery={searchQuery}
         />
       ))}
     </div>
