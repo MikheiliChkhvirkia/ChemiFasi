@@ -46,8 +46,9 @@ const BannerImage = memo(function BannerImage({
         alt={banner.title}
         className="w-full h-full object-cover"
         loading={isActive ? 'eager' : 'lazy'}
-        draggable="false"
         decoding="async"
+        width="1200"
+        height="400"
       />
     </button>
   );
@@ -227,7 +228,7 @@ export function PromotionalBanner({
         >
           {banners.map((banner, index) => (
             <BannerImage
-              key={`${banner.title}-${index}`}
+              key={`banner-${banner.title}-${index}`}
               banner={banner}
               isActive={currentIndex === index}
               onClick={() => handleBannerClick(banners[index])}
@@ -263,7 +264,7 @@ export function PromotionalBanner({
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
             {banners.map((_, index) => (
               <button
-                key={index}
+                key={`indicator-${index}`}
                 className={`w-2 h-2 rounded-full transition-all ${
                   currentIndex === index ? 'bg-white w-4' : 'bg-white/50'
                 }`}
@@ -287,7 +288,7 @@ export function PromotionalBanner({
               const storeCount = Object.keys(item.stores).length;
               return (
                 <Card
-                  key={item.id}
+                  key={`category-${item.id}`}
                   onClick={() => onCategorySelect(item.id)}
                   className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg group"
                   style={{ gridArea: item.gridArea }}
@@ -300,6 +301,8 @@ export function PromotionalBanner({
                       className="w-full h-full object-cover"
                       loading="lazy"
                       decoding="async"
+                      width="400"
+                      height="200"
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
                       <h3 className="text-lg md:text-xl font-bold text-center mb-1">{item.category.title}</h3>

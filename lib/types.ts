@@ -64,6 +64,26 @@ export interface SearchFilters {
   categoryId?: string;
 }
 
+export enum EventType {
+  View = 1,
+  Click = 2,
+  AddToCart = 3,
+  Purchase = 4
+}
+
+export interface ProductInteraction {
+  productKey: string;
+  name: string;
+  price: number;
+  salePrice: number | null;
+  url: string;
+  imageUrl: string | null;
+  source: number;
+  eventType: EventType;
+  query: string;
+  relevanceScore?: number;
+}
+
 // Google Analytics
 interface GTagEvent {
   action: string;

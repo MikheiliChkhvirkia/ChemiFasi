@@ -17,12 +17,12 @@ export function Header({ isScrolled = false, onReset }: HeaderProps) {
         <div className="h-12 flex items-center justify-between">
           <Logo isScrolled={isScrolled} onReset={onReset} />
           <div className="flex items-center gap-4">
-            <Link href="#" className="text-white/70 hover:text-white text-sm">
+            {/* <Link href="#" className="text-white/70 hover:text-white text-sm">
               შესვლა
             </Link>
             <Button variant="outline" size="sm" className="h-7 bg-transparent text-white border-white hover:bg-white hover:text-black">
               რეგისტრაცია
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>

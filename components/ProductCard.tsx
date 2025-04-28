@@ -2,7 +2,8 @@
 
 import { Card } from '@/components/ui/card';
 import { formatPrice, addUtmParams } from '@/lib/utils';
-import { Product, StoreSetting } from '@/lib/types';
+import { Product, StoreSetting, EventType } from '@/lib/types';
+import { trackProductInteraction } from '@/lib/api';
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +16,7 @@ interface ProductCardProps {
   product: Product;
   storeSettings: Record<string, StoreSetting>;
   isListView?: boolean;
+  searchQuery?: string;
 }
 
 const StoreLogo = memo(({ imageUrl, title, className }: { imageUrl?: string; title?: string; className: string }) => (
@@ -44,7 +46,12 @@ const StoreLogo = memo(({ imageUrl, title, className }: { imageUrl?: string; tit
 
 StoreLogo.displayName = 'StoreLogo';
 
-export const ProductCard = memo(function ProductCard({ product, storeSettings, isListView = false }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ 
+  product, 
+  storeSettings, 
+  isListView = false,
+  searchQuery = ''
+}: ProductCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const store = storeSettings[product.source];
   const relevancePercentage = product.relevanceScore 
@@ -57,8 +64,24 @@ export const ProductCard = memo(function ProductCard({ product, storeSettings, i
 
   const handleClick = () => {
     if (product.url) {
+      // Track product interaction
+      trackProductInteraction({
+        productKey: product.productKey,
+        name: product.name,
+        price: product.price,
+        salePrice: product.salePrice,
+        url: product.url,
+        imageUrl: product.imageUrl,
+        source: product.source,
+        eventType: EventType.Click,
+        query: searchQuery,
+        relevanceScore: product.relevanceScore
+      });
+
+      // Add UTM parameters to the URL
       const urlWithUtm = addUtmParams(product.url, store?.title || 'unknown');
 
+      // Track with Google Analytics if available
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'outbound_click', {
           event_category: 'outbound',
@@ -69,6 +92,7 @@ export const ProductCard = memo(function ProductCard({ product, storeSettings, i
         });
       }
       
+      // Open the URL in a new tab
       window.open(urlWithUtm, '_blank', 'noopener,noreferrer');
     }
   };

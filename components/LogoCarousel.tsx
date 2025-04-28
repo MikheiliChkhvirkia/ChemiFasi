@@ -83,10 +83,10 @@ export const LogoCarousel = memo(function LogoCarousel({ stores }: LogoCarouselP
             transform: `translateX(-${logoWidth}px)`,
           }}
         >
-          {[...Array(3)].flatMap(() =>
-            storeArray.map(([id, store]) => (
+          {[...Array(3)].flatMap((_, outerIndex) =>
+            storeArray.map(([id, store], innerIndex) => (
               <div
-                key={`${id}-${store.link}`}
+                key={`${outerIndex}-${id}-${innerIndex}`}
                 className="min-w-[150px] sm:min-w-[180px] h-28 sm:h-32"
               >
                 <button
@@ -99,7 +99,8 @@ export const LogoCarousel = memo(function LogoCarousel({ stores }: LogoCarouselP
                     className="w-full h-full object-contain"
                     loading="lazy"
                     decoding="async"
-                    draggable="false"
+                    width="150"
+                    height="100"
                   />
                 </button>
               </div>

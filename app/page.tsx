@@ -8,7 +8,7 @@ import { StoreFilterBar } from '@/components/StoreFilterBar';
 import { PromotionalBanner } from '@/components/PromotionalBanner';
 import { LogoCarousel } from '@/components/LogoCarousel';
 import { Logo } from '@/components/Logo';
-import { searchProducts, getSiteSettings } from '@/lib/api';
+import { searchProducts, getSiteSettings, detectImage } from '@/lib/api';
 import { SortType, Product, SearchResponse } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -28,8 +28,7 @@ export default function HomePage() {
   const [selectedStores, setSelectedStores] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortType, setSortType] = useState<SortType>('relevance');
-  // Commented out image search state
-  // const [imageSearchResults, setImageSearchResults] = useState<SearchResponse | null>(null);
+  const [imageSearchResults, setImageSearchResults] = useState<SearchResponse | null>(null);
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [debouncedMinPrice, setDebouncedMinPrice] = useState<string>('');
@@ -40,8 +39,7 @@ export default function HomePage() {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isGridView, setIsGridView] = useState(true);
-  // Commented out image search loading state
-  // const [isImageSearching, setIsImageSearching] = useState(false);
+  const [isImageSearching, setIsImageSearching] = useState(false);
 
   const debouncedSetMinPrice = useCallback(
     debounce((value: string) => setDebouncedMinPrice(value), DEBOUNCE_DELAY),
@@ -57,7 +55,7 @@ export default function HomePage() {
     debounce((query: string) => {
       if (query.length >= MIN_SEARCH_LENGTH || query === '') {
         setSearchQuery(query);
-        // setImageSearchResults(null);
+        setImageSearchResults(null);
         setCurrentPage(1);
       }
     }, SEARCH_DEBOUNCE_DELAY),
@@ -99,7 +97,7 @@ export default function HomePage() {
     setSelectedStores([]);
     setSelectedCategory(null);
     setSortType('relevance');
-    // setImageSearchResults(null);
+    setImageSearchResults(null);
     setMinPrice('');
     setMaxPrice('');
     setDebouncedMinPrice('');
@@ -108,7 +106,7 @@ export default function HomePage() {
     scrollToTop();
   };
 
-  const { data: siteSettings } = useQuery({
+  const { data: siteSettings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['siteSettings'],
     queryFn: getSiteSettings,
   });
@@ -134,24 +132,24 @@ export default function HomePage() {
 
   const handleSearch = (query: string) => {
     debouncedSearch(query);
+    scrollToTop();
   };
 
-  // Commented out image search handler
-  // const handleImageSearch = async (imageUrl: string) => {
-  //   if (!imageUrl) return;
-  //   
-  //   try {
-  //     setIsImageSearching(true);
-  //     const results = await detectImage(imageUrl);
-  //     setImageSearchResults(results);
-  //     setSearchQuery('');
-  //     setCurrentPage(1);
-  //   } catch (error) {
-  //     console.error('Image search failed:', error);
-  //   } finally {
-  //     setIsImageSearching(false);
-  //   }
-  // };
+  const handleImageSearch = async (imageUrl: string) => {
+    if (!imageUrl) return;
+    
+    try {
+      setIsImageSearching(true);
+      const results = await detectImage(imageUrl);
+      setImageSearchResults(results);
+      setSearchQuery('');
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Image search failed:', error);
+    } finally {
+      setIsImageSearching(false);
+    }
+  };
 
   const handleStoreToggle = (storeId: number) => {
     setSelectedStores(prev =>
@@ -166,6 +164,7 @@ export default function HomePage() {
     setSelectedCategory(prev => prev === categoryId ? null : categoryId);
     setSelectedStores([]);
     setCurrentPage(1);
+    scrollToTop();
   };
 
   const handlePriceChange = (value: string, type: 'min' | 'max') => {
@@ -190,8 +189,7 @@ export default function HomePage() {
     setCurrentPage(1);
   };
 
-  // const currentResults = imageSearchResults || searchResults;
-  const currentResults = searchResults;
+  const currentResults = imageSearchResults || searchResults;
   
   const filteredProducts = useMemo(() => {
     return currentResults?.products?.filter((product: Product) => {
@@ -255,8 +253,8 @@ export default function HomePage() {
             <div className="h-24 flex items-center">
               <SearchBar 
                 onSearch={handleSearch}
-                onImageSearch={() => {}}
-                isLoading={isSearching}
+                onImageSearch={handleImageSearch}
+                isLoading={isSearching || isImageSearching}
                 selectedCategory={selectedCategory ? siteSettings?.categories[selectedCategory] : null}
               />
             </div>
@@ -340,7 +338,7 @@ export default function HomePage() {
         )}
       </header>
 
-      {!searchQuery && !selectedCategory && (
+      {!searchQuery && !imageSearchResults && !selectedCategory && (
         <div className="py-8">
           <PromotionalBanner 
             categorizedStores={siteSettings?.categorizedStores || {}}
@@ -358,7 +356,7 @@ export default function HomePage() {
               products={paginatedProducts}
               storeSettings={siteSettings?.storeSetting || {}}
               isGridView={isGridView}
-              isLoading={isSearching}
+              isLoading={isSearching || isImageSearching}
             />
 
             {totalPages > 1 && (
@@ -380,7 +378,7 @@ export default function HomePage() {
                     </div>
                   ) : (
                     <Button
-                      key={page}
+                      key={`page-${page}`}
                       variant={currentPage === page ? "default" : "outline"}
                       onClick={() => handlePageChange(page as number)}
                       className={`h-8 w-8 p-0 border-black ${
@@ -425,74 +423,6 @@ export default function HomePage() {
           <LogoCarousel stores={siteSettings.storeSetting} />
         </div>
       )}
-
-      {/* <footer className="mt-auto py-8 bg-black text-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="font-semibold mb-4">ჩვენს შესახებ</h3>
-              <p className="text-sm text-gray-300">
-                ჩემი ფასი არ ყიდის პროდუქტებს. ყველა პროდუქტის მონაცემები მოპოვებულია საჯარო წყაროებიდან.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">სამართლებრივი</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link href="/privacy" className="text-gray-300 hover:text-white">
-                    კონფიდენციალურობის პოლიტიკა
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-gray-300 hover:text-white">
-                    მომსახურების პირობები
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/about" className="text-gray-300 hover:text-white">
-                    ჩვენს შესახებ
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="text-gray-300 hover:text-white">
-                    კონტაქტი
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">შემქმნელი</h3>
-              <div className="flex gap-4">
-                <a
-                  href="https://github.com/MikheiliChkhvirkia/MikheilChkhvirkia"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <Github className="h-6 w-6" />
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/mikheil-chkhvirkia-a1809421a/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <Linkedin className="h-6 w-6" />
-                </a>
-                <a
-                  href="https://www.youtube.com/@MrTypicalCouple"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white"
-                >
-                  <Youtube className="h-6 w-6" />
-                </a>
-              </div>
-              <p className="mt-4 text-sm text-gray-300">© 2025 მიხეილ ჩხვირკია</p>
-            </div>
-          </div>
-        </div>
-      </footer> */}
     </main>
   );
 }
