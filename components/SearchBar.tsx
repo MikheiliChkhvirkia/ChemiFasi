@@ -1,51 +1,63 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Loader2, X } from 'lucide-react';
+import { Search, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CategoryInfo } from '@/lib/types';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
+  onInputChange?: (query: string) => void;
+  inputValue?: string;
   onImageSearch: (imageUrl: string) => void;
   isLoading?: boolean;
   selectedCategory?: CategoryInfo | null;
 }
 
-export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory }: SearchBarProps) {
+export function SearchBar({ 
+  onSearch, 
+  onInputChange, 
+  inputValue, 
+  onImageSearch, 
+  isLoading, 
+  selectedCategory 
+}: SearchBarProps) {
   const [query, setQuery] = useState('');
-  // Commented out image search functionality
-  // const [isImageSearch, setIsImageSearch] = useState(false);
+  const [isImageSearch, setIsImageSearch] = useState(false);
 
   const handleSearch = () => {
     if (isLoading) return;
-    onSearch(query);
-    // Commented out image search functionality
-    // if (isImageSearch) {
-    //   onImageSearch(query);
-    // } else {
-    //   onSearch(query);
-    // }
+    
+    if (isImageSearch) {
+      onImageSearch(query);
+    } else {
+      onSearch(query);
+    }
   };
 
   const handleClear = () => {
     setQuery('');
+    if (onInputChange) {
+      onInputChange('');
+    }
     onSearch('');
   };
 
-  // Commented out image search functionality
-  // const toggleSearchMode = () => {
-  //   setIsImageSearch(!isImageSearch);
-  //   setQuery('');
-  // };
+  const toggleSearchMode = () => {
+    setIsImageSearch(!isImageSearch);
+    setQuery('');
+    if (onInputChange) {
+      onInputChange('');
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
-    // if (!isImageSearch) {
-    onSearch(newQuery);
-    // }
+    if (onInputChange) {
+      onInputChange(newQuery);
+    }
   };
 
   return (
@@ -55,11 +67,13 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
           <Input
             type="text"
             placeholder={
-              selectedCategory
+              isImageSearch 
+                ? "სურათის URL..." 
+                : selectedCategory
                 ? `ძიება ${selectedCategory.title}-ში...`
                 : "ძიება პროდუქტის სახელით..."
             }
-            value={query}
+            value={inputValue !== undefined ? inputValue : query}
             onChange={handleInputChange}
             className="w-full h-12 pl-12 pr-10 bg-gray-100 border-gray-200 rounded-lg focus:border-black focus:ring-black text-lg"
             onKeyDown={(e) => {
@@ -72,6 +86,8 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
           <div className="absolute left-4 top-0 bottom-0 flex items-center">
             {isLoading ? (
               <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+            ) : isImageSearch ? (
+              <ImageIcon className="h-5 w-5 text-gray-400" />
             ) : (
               <Search className="h-5 w-5 text-gray-400" />
             )}
@@ -87,8 +103,7 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
             </Button>
           )}
         </div>
-        {/* Commented out image search button
-        <Button 
+        {/* <Button 
           variant="outline"
           size="default"
           onClick={toggleSearchMode}
@@ -96,8 +111,7 @@ export function SearchBar({ onSearch, onImageSearch, isLoading, selectedCategory
           disabled={isLoading}
         >
           {isImageSearch ? 'ტექსტით ძიება' : 'სურათით ძიება'}
-        </Button>
-        */}
+        </Button> */}
         <Button 
           onClick={handleSearch}
           size="default"

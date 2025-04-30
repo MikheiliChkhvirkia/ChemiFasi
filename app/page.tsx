@@ -40,6 +40,7 @@ export default function HomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isGridView, setIsGridView] = useState(true);
   const [isImageSearching, setIsImageSearching] = useState(false);
+  const [inputQuery, setInputQuery] = useState('');
 
   const debouncedSetMinPrice = useCallback(
     debounce((value: string) => setDebouncedMinPrice(value), DEBOUNCE_DELAY),
@@ -48,17 +49,6 @@ export default function HomePage() {
 
   const debouncedSetMaxPrice = useCallback(
     debounce((value: string) => setDebouncedMaxPrice(value), DEBOUNCE_DELAY),
-    []
-  );
-
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      if (query.length >= MIN_SEARCH_LENGTH || query === '') {
-        setSearchQuery(query);
-        setImageSearchResults(null);
-        setCurrentPage(1);
-      }
-    }, SEARCH_DEBOUNCE_DELAY),
     []
   );
 
@@ -94,6 +84,7 @@ export default function HomePage() {
 
   const handleReset = () => {
     setSearchQuery('');
+    setInputQuery('');
     setSelectedStores([]);
     setSelectedCategory(null);
     setSortType('relevance');
@@ -127,12 +118,20 @@ export default function HomePage() {
       maxPrice: debouncedMaxPrice ? Number(debouncedMaxPrice) : undefined,
       categoryId: selectedCategory || undefined,
     }),
-    enabled: searchQuery.length >= MIN_SEARCH_LENGTH || selectedCategory !== null,
+    enabled: (searchQuery.length >= MIN_SEARCH_LENGTH || selectedCategory !== null),
   });
 
   const handleSearch = (query: string) => {
-    debouncedSearch(query);
-    scrollToTop();
+    if (query.length >= MIN_SEARCH_LENGTH || query === '') {
+      setSearchQuery(query);
+      setImageSearchResults(null);
+      setCurrentPage(1);
+      scrollToTop();
+    }
+  };
+
+  const handleInputChange = (query: string) => {
+    setInputQuery(query);
   };
 
   const handleImageSearch = async (imageUrl: string) => {
@@ -253,6 +252,8 @@ export default function HomePage() {
             <div className="h-24 flex items-center">
               <SearchBar 
                 onSearch={handleSearch}
+                onInputChange={handleInputChange}
+                inputValue={inputQuery}
                 onImageSearch={handleImageSearch}
                 isLoading={isSearching || isImageSearching}
                 selectedCategory={selectedCategory ? siteSettings?.categories[selectedCategory] : null}
