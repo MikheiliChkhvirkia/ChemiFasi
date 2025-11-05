@@ -2,7 +2,8 @@ import axios from 'axios';
 import { SearchFilters, SearchResponse, SiteSettings, Banner, ProductInteraction } from './types';
 
 const baseURL = process.env.NODE_ENV === 'development' 
-  ? 'https://localhost:7172/api/v1'
+  // ? 'https://localhost:7172/api/v1'
+  ? 'https://chemifasi.runasp.net/api/v1'
   : 'https://chemifasi.runasp.net/api/v1';
 
 const api = axios.create({

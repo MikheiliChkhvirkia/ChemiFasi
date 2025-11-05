@@ -121,14 +121,16 @@ export default function HomePage() {
     enabled: (searchQuery.length >= MIN_SEARCH_LENGTH || selectedCategory !== null),
   });
 
-  const handleSearch = (query: string) => {
-    if (query.length >= MIN_SEARCH_LENGTH || query === '') {
-      setSearchQuery(query);
-      setImageSearchResults(null);
-      setCurrentPage(1);
-      scrollToTop();
-    }
-  };
+const handleSearch = (query: string) => {
+  if (query.length >= MIN_SEARCH_LENGTH || query === '') {
+    setSearchQuery(query);
+    setDebouncedMinPrice(minPrice);
+    setDebouncedMaxPrice(maxPrice);
+    setImageSearchResults(null);
+    setCurrentPage(1);
+    scrollToTop();
+  }
+};
 
   const handleInputChange = (query: string) => {
     setInputQuery(query);
@@ -166,27 +168,27 @@ export default function HomePage() {
     scrollToTop();
   };
 
-  const handlePriceChange = (value: string, type: 'min' | 'max') => {
-    const numValue = value === '' ? '' : Math.max(0, Number(value));
-    const stringValue = String(numValue);
-    
-    if (type === 'min') {
-      setMinPrice(stringValue);
-      debouncedSetMinPrice(stringValue);
-      if (maxPrice && numValue !== '' && Number(numValue) > Number(maxPrice)) {
-        setMaxPrice(stringValue);
-        debouncedSetMaxPrice(stringValue);
-      }
-    } else {
-      setMaxPrice(stringValue);
-      debouncedSetMaxPrice(stringValue);
-      if (minPrice && numValue !== '' && Number(numValue) < Number(minPrice)) {
-        setMinPrice(stringValue);
-        debouncedSetMinPrice(stringValue);
-      }
-    }
-    setCurrentPage(1);
-  };
+// keep typing free — only touch the field being edited
+const sanitize = (v: string) => v.replace(/[^\d]/g, ''); // digits only
+
+const handlePriceChange = (value: string, type: 'min' | 'max') => {
+  const cleaned = sanitize(value);
+  if (type === 'min') setMinPrice(cleaned);
+  else setMaxPrice(cleaned);
+  // do NOT mutate the other field here
+  // do NOT change page here — apply on Search
+};
+
+// optional: normalize relationship when user leaves either field
+const handlePriceBlur = () => {
+  const min = minPrice === '' ? null : Number(minPrice);
+  const max = maxPrice === '' ? null : Number(maxPrice);
+  if (min !== null && max !== null && min > max) {
+    // swap locally so inputs make sense visually
+    setMinPrice(String(max));
+    setMaxPrice(String(min));
+  }
+};
 
   const currentResults = imageSearchResults || searchResults;
   
@@ -304,21 +306,25 @@ export default function HomePage() {
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d*"
                       placeholder="მინ. ფასი"
                       value={minPrice}
                       onChange={(e) => handlePriceChange(e.target.value, 'min')}
+                      onBlur={handlePriceBlur}
                       className="w-full sm:w-24 h-8 bg-white"
-                      min="0"
                     />
                     <span>-</span>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d*"
                       placeholder="მაქს. ფასი"
                       value={maxPrice}
                       onChange={(e) => handlePriceChange(e.target.value, 'max')}
+                      onBlur={handlePriceBlur}
                       className="w-full sm:w-24 h-8 bg-white"
-                      min="0"
                     />
                   </div>
                 </div>
