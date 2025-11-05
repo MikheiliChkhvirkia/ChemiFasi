@@ -3,7 +3,7 @@ import { SearchFilters, SearchResponse, SiteSettings, Banner, ProductInteraction
 
 const baseURL = process.env.NODE_ENV === 'development' 
   ? 'https://localhost:7172/api/v1'
-  : 'https://api.chemifasi.ge/api/v1';
+  : 'http://chemifasi.runasp.net/api/v1';
 
 const api = axios.create({
   baseURL,
